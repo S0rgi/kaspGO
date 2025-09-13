@@ -1,0 +1,31 @@
+# Binary outputs
+/bin/
+/coverage/
+/*.exe
+/*.exe~
+/*.dll
+/*.so
+/*.dylib
+
+# Test coverage files
+*.out
+*.prof
+
+# Editor/IDE files
+.vscode/
+
+
+# Go build artifacts
+*.test
+*.exe
+pkg/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
