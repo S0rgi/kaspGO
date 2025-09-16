@@ -20,6 +20,7 @@ format:
 clean:
 	rm -rf ${EXEC_FILE} coverage/*
 coverage:
+	mkdir ${PATH_COVER}
 	go test -race -coverprofile=${PATH_COVER}/coverage.out ./internal/worker_pool
 	go tool cover -func=${PATH_COVER}/coverage.out
 coverage-html: coverage
