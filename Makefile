@@ -20,8 +20,7 @@ format:
 clean:
 	rm -rf ${EXEC_FILE} coverage/*
 coverage:
-	rm -r ${PATH_COVER}
-	mkdir ${PATH_COVER}
+	mkdir -p ${PATH_COVER}
 	go test -race -coverprofile=${PATH_COVER}/coverage.out ./...
 	go tool cover -func=${PATH_COVER}/coverage.out
 coverage-html: coverage

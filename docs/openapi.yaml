@@ -28,10 +28,16 @@ paths:
                     example: queued
         '400':
           description: Неверный запрос
+        '405':
+          description: Метод не поддерживается
+        '413':
+          description: Тело запроса слишком большое
         '429':
           description: Очередь переполнена
         '503':
           description: Сервис не принимает новые задачи (закрывается)
+        '500':
+          description: Внутренняя ошибка сервера
   /healthz:
     get:
       summary: Healthcheck
@@ -53,14 +59,18 @@ components:
           type: string
           description: Идентификатор задания
           example: job-123
+          maxLength: 128
         payload:
           type: string
           description: Произвольные данные задания
           example: some-data
+          description: Произвольные данные задания (ограничение размера ~1MiB)
         max_retries:
           type: integer
           description: Максимальное число повторов при ошибке
           default: 0
+          minimum: 0
+          maximum: 10
 
 
 
