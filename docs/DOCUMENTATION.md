@@ -19,8 +19,8 @@ import "kaspContainers/internal/worker_pool"
 ## Index
 
 - [type Pool](<#Pool>)
+  - [func NewWorkerPool\(numWorkers int\) Pool](<#NewWorkerPool>)
 - [type WorkerPool](<#WorkerPool>)
-  - [func NewWorkerPool\(numberOfWorkers int\) \*WorkerPool](<#NewWorkerPool>)
   - [func \(wp \*WorkerPool\) Stop\(\)](<#WorkerPool.Stop>)
   - [func \(wp \*WorkerPool\) StopWait\(\)](<#WorkerPool.StopWait>)
   - [func \(wp \*WorkerPool\) Submit\(task func\(\)\)](<#WorkerPool.Submit>)
@@ -48,6 +48,15 @@ type Pool interface {
 }
 ```
 
+<a name="NewWorkerPool"></a>
+### func NewWorkerPool
+
+```go
+func NewWorkerPool(numWorkers int) Pool
+```
+
+NewWorkerPool \- конструктор воркер пула
+
 <a name="WorkerPool"></a>
 ## type WorkerPool
 
@@ -55,17 +64,9 @@ type Pool interface {
 
 ```go
 type WorkerPool struct {
+    // contains filtered or unexported fields
 }
 ```
-
-<a name="NewWorkerPool"></a>
-### func NewWorkerPool
-
-```go
-func NewWorkerPool(numberOfWorkers int) *WorkerPool
-```
-
-
 
 <a name="WorkerPool.Stop"></a>
 ### func \(\*WorkerPool\) Stop

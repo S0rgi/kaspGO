@@ -4,7 +4,7 @@ import "sync"
 
 // Команда разработки решений для управления корпоративной защитой
 
-// Выполненное задание направлять по ссылке - https://box.kaspersky.com/u/d/dffa4ef2a42c4e7caecc/
+// Выполненное задание направлять по ссылке -
 
 // Важно! Не забудьте указать ваши фамилию и имя в названии файла.
 
@@ -19,13 +19,13 @@ type WorkerPool struct {
 	mu       sync.Mutex     // защита от гонок при закрытии и добавлении задач
 }
 
+//NewWorkerPool - конструктор воркер пула
 func NewWorkerPool(numWorkers int) Pool {
 	wp := &WorkerPool{
 		tasks:  make(chan func()),
 		stopCh: make(chan struct{}),
 	}
 
-	// запускаем воркеров
 	for i := 0; i < numWorkers; i++ {
 		go wp.worker()
 	}
@@ -53,6 +53,8 @@ func (wp *WorkerPool) Submit(task func()) {
 	defer wp.mu.Unlock()
 	if wp.closed {
 		return // или panic("submit to closed pool")
+		// или вовращать error ("worker already closed"),
+		// но для этого нужно поменять сигнатуру метода описанную в задании
 	}
 	wp.wg.Add(1)
 	wp.tasks <- task
@@ -67,6 +69,8 @@ func (wp *WorkerPool) SubmitWait(task func()) {
 	if wp.closed {
 		wp.mu.Unlock()
 		return // или panic("submit to closed pool")
+		// или вовращать error ("worker already closed"),
+		// но для этого нужно поменять сигнатуру метода описанную в задании
 	}
 	wp.wg.Add(1)
 	wp.mu.Unlock()
