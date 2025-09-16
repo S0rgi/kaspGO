@@ -22,7 +22,7 @@ clean:
 coverage:
 	rm -r ${PATH_COVER}
 	mkdir ${PATH_COVER}
-	go test -race -coverprofile=${PATH_COVER}/coverage.out ./internal/worker_pool
+	go test -race -coverprofile=${PATH_COVER}/coverage.out ./...
 	go tool cover -func=${PATH_COVER}/coverage.out
 coverage-html: coverage
 	go tool cover -html=${PATH_COVER}/coverage.out -o ${PATH_COVER}/coverage.html

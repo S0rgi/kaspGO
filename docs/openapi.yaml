@@ -1,0 +1,67 @@
+openapi: 3.0.3
+info:
+  title: kaspGO Job Queue API
+  version: 1.0.0
+  description: HTTP API для постановки задач в очередь и healthcheck.
+servers:
+  - url: http://localhost:8080
+paths:
+  /enqueue:
+    post:
+      summary: Поставить задачу в очередь
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnqueueRequest'
+      responses:
+        '202':
+          description: Задача принята в очередь
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: queued
+        '400':
+          description: Неверный запрос
+        '429':
+          description: Очередь переполнена
+        '503':
+          description: Сервис не принимает новые задачи (закрывается)
+  /healthz:
+    get:
+      summary: Healthcheck
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+components:
+  schemas:
+    EnqueueRequest:
+      type: object
+      required: [id, payload]
+      properties:
+        id:
+          type: string
+          description: Идентификатор задания
+          example: job-123
+        payload:
+          type: string
+          description: Произвольные данные задания
+          example: some-data
+        max_retries:
+          type: integer
+          description: Максимальное число повторов при ошибке
+          default: 0
+
+
+
+

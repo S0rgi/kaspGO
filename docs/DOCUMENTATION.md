@@ -10,98 +10,332 @@ import "kaspContainers/cmd/app"
 
 
 
-# worker\_pool
+# app
 
 ```go
-import "kaspContainers/internal/worker_pool"
+import "kaspContainers/internal/app"
 ```
 
 ## Index
 
-- [type Pool](<#Pool>)
-  - [func NewWorkerPool\(numWorkers int\) Pool](<#NewWorkerPool>)
-- [type WorkerPool](<#WorkerPool>)
-  - [func \(wp \*WorkerPool\) Stop\(\)](<#WorkerPool.Stop>)
-  - [func \(wp \*WorkerPool\) StopWait\(\)](<#WorkerPool.StopWait>)
-  - [func \(wp \*WorkerPool\) Submit\(task func\(\)\)](<#WorkerPool.Submit>)
-  - [func \(wp \*WorkerPool\) SubmitWait\(task func\(\)\)](<#WorkerPool.SubmitWait>)
+- [type App](<#App>)
+  - [func New\(cfg config.Config, q \*jobqueue.Queue, proc processing.Processor, bo backoff.Policy\) \*App](<#New>)
+  - [func \(a \*App\) Run\(ctx context.Context, addr string\) error](<#App.Run>)
 
 
-<a name="Pool"></a>
-## type Pool
+<a name="App"></a>
+## type App
 
-
+App инкапсулирует конфигурацию сервиса, очередь задач, процессор обработки и политику бэкоффа, а также управляет HTTP\-сервером и жизненным циклом воркеров.
 
 ```go
-type Pool interface {
-    // Submit - добавить таску в воркер пул
-    Submit(task func())
-
-    // SubmitWait - добавить таску в воркер пул и дождаться окончания ее выполнения
-    SubmitWait(task func())
-
-    // Stop - остановить воркер пул, дождаться выполнения только тех тасок, которые выполняются сейчас
-    Stop()
-
-    // StopWait - остановить воркер пул, дождаться выполнения всех тасок, даже тех, что не начали выполняться, но лежат в очереди
-    StopWait()
-}
-```
-
-<a name="NewWorkerPool"></a>
-### func NewWorkerPool
-
-```go
-func NewWorkerPool(numWorkers int) Pool
-```
-
-NewWorkerPool \- конструктор воркер пула
-
-<a name="WorkerPool"></a>
-## type WorkerPool
-
-
-
-```go
-type WorkerPool struct {
+type App struct {
     // contains filtered or unexported fields
 }
 ```
 
-<a name="WorkerPool.Stop"></a>
-### func \(\*WorkerPool\) Stop
+<a name="New"></a>
+### func New
 
 ```go
-func (wp *WorkerPool) Stop()
+func New(cfg config.Config, q *jobqueue.Queue, proc processing.Processor, bo backoff.Policy) *App
 ```
 
-Stop \- остановить воркер пул, дождаться выполнения только тех тасок, которые выполняются сейчас
+New создаёт и возвращает новый экземпляр приложения.
 
-<a name="WorkerPool.StopWait"></a>
-### func \(\*WorkerPool\) StopWait
+<a name="App.Run"></a>
+### func \(\*App\) Run
 
 ```go
-func (wp *WorkerPool) StopWait()
+func (a *App) Run(ctx context.Context, addr string) error
 ```
 
-StopWait \- остановить воркер пул, дождаться выполнения всех тасок, даже тех, что не начали выполняться, но лежат в очереди
+Run запускает HTTP\-сервер, воркеры и ожидает завершения по ctx.
 
-<a name="WorkerPool.Submit"></a>
-### func \(\*WorkerPool\) Submit
+# backoff
 
 ```go
-func (wp *WorkerPool) Submit(task func())
+import "kaspContainers/internal/backoff"
 ```
 
-Submit \- добавить таску в воркер пул
+## Index
 
-<a name="WorkerPool.SubmitWait"></a>
-### func \(\*WorkerPool\) SubmitWait
+- [type ExponentialJitter](<#ExponentialJitter>)
+  - [func \(e ExponentialJitter\) Delay\(attempt int\) time.Duration](<#ExponentialJitter.Delay>)
+- [type Policy](<#Policy>)
+
+
+<a name="ExponentialJitter"></a>
+## type ExponentialJitter
+
+ExponentialJitter — экспоненциальная задержка с джиттером и верхней границей.
 
 ```go
-func (wp *WorkerPool) SubmitWait(task func())
+type ExponentialJitter struct {
+    Base   time.Duration // базовая задержка (например, 50ms)
+    Max    time.Duration // верхняя граница (например, 5s)
+    Jitter time.Duration // до +/-Jitter добавляется случайно
+}
 ```
 
-SubmitWait \- добавить таску в воркер пул и дождаться окончания ее выполнения
+<a name="ExponentialJitter.Delay"></a>
+### func \(ExponentialJitter\) Delay
+
+```go
+func (e ExponentialJitter) Delay(attempt int) time.Duration
+```
+
+Delay вычисляет задержку для попытки attempt с экспоненциальным ростом и джиттером.
+
+<a name="Policy"></a>
+## type Policy
+
+Policy задаёт задержку перед ретраем по номеру попытки \(начиная с 1\).
+
+```go
+type Policy interface {
+    Delay(attempt int) time.Duration
+}
+```
+
+# config
+
+```go
+import "kaspContainers/internal/config"
+```
+
+## Index
+
+- [type Config](<#Config>)
+  - [func Load\(\) Config](<#Load>)
+
+
+<a name="Config"></a>
+## type Config
+
+Config содержит конфигурацию приложения, загружаемую из переменных окружения.
+
+```go
+type Config struct {
+    Workers   int
+    QueueSize int
+    ErrorRate int // 0..100, процент неуспеха обработки
+}
+```
+
+<a name="Load"></a>
+### func Load
+
+```go
+func Load() Config
+```
+
+Load создаёт конфигурацию из переменных окружения.
+
+# jobqueue
+
+```go
+import "kaspContainers/internal/jobqueue"
+```
+
+## Index
+
+- [Variables](<#variables>)
+- [func WorkerLoop\(done \<\-chan struct\{\}, q \*Queue, simulateProcess func\(Job\) bool\)](<#WorkerLoop>)
+- [type Job](<#Job>)
+- [type Queue](<#Queue>)
+  - [func NewQueue\(bufferSize int\) \*Queue](<#NewQueue>)
+  - [func \(q \*Queue\) Close\(\)](<#Queue.Close>)
+  - [func \(q \*Queue\) Enqueue\(job Job\) error](<#Queue.Enqueue>)
+  - [func \(q \*Queue\) Next\(\) \(Job, bool\)](<#Queue.Next>)
+  - [func \(q \*Queue\) StatesSnapshot\(\) map\[string\]State](<#Queue.StatesSnapshot>)
+  - [func \(q \*Queue\) UpdatesStateDone\(id string\)](<#Queue.UpdatesStateDone>)
+  - [func \(q \*Queue\) UpdatesStateFailed\(id string\)](<#Queue.UpdatesStateFailed>)
+  - [func \(q \*Queue\) UpdatesStateRunning\(id string\)](<#Queue.UpdatesStateRunning>)
+- [type State](<#State>)
+
+
+## Variables
+
+<a name="ErrClosed"></a>
+
+```go
+var ErrClosed = errors.New("queue closed")
+```
+
+<a name="ErrFull"></a>
+
+```go
+var ErrFull = errors.New("queue full")
+```
+
+<a name="WorkerLoop"></a>
+## func WorkerLoop
+
+```go
+func WorkerLoop(done <-chan struct{}, q *Queue, simulateProcess func(Job) bool)
+```
+
+WorkerLoop обрабатывает задания из очереди до закрытия канала или завершения контекста done. simulateProcess имитирует обработку задачи и возвращает ok=true при успехе, иначе false. Устаревший метод, используется только в тестах.
+
+<a name="Job"></a>
+## type Job
+
+Job представляет задание для обработки.
+
+```go
+type Job struct {
+    ID         string
+    Payload    string
+    MaxRetries int
+}
+```
+
+<a name="Queue"></a>
+## type Queue
+
+
+
+```go
+type Queue struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewQueue"></a>
+### func NewQueue
+
+```go
+func NewQueue(bufferSize int) *Queue
+```
+
+NewQueue создаёт новую очередь с заданным размером буфера.
+
+<a name="Queue.Close"></a>
+### func \(\*Queue\) Close
+
+```go
+func (q *Queue) Close()
+```
+
+Close закрывает очередь для новых заданий.
+
+<a name="Queue.Enqueue"></a>
+### func \(\*Queue\) Enqueue
+
+```go
+func (q *Queue) Enqueue(job Job) error
+```
+
+Enqueue добавляет задание в очередь. Возвращает ошибку, если очередь закрыта или переполнена.
+
+<a name="Queue.Next"></a>
+### func \(\*Queue\) Next
+
+```go
+func (q *Queue) Next() (Job, bool)
+```
+
+Next блокирующе возвращает следующее задание из очереди. Возвращает ok=false, когда очередь закрыта и опустела.
+
+<a name="Queue.StatesSnapshot"></a>
+### func \(\*Queue\) StatesSnapshot
+
+```go
+func (q *Queue) StatesSnapshot() map[string]State
+```
+
+StatesSnapshot возвращает снимок всех состояний заданий.
+
+<a name="Queue.UpdatesStateDone"></a>
+### func \(\*Queue\) UpdatesStateDone
+
+```go
+func (q *Queue) UpdatesStateDone(id string)
+```
+
+UpdatesStateDone обновляет состояние задания на "завершено".
+
+<a name="Queue.UpdatesStateFailed"></a>
+### func \(\*Queue\) UpdatesStateFailed
+
+```go
+func (q *Queue) UpdatesStateFailed(id string)
+```
+
+UpdatesStateFailed обновляет состояние задания на "неудачно".
+
+<a name="Queue.UpdatesStateRunning"></a>
+### func \(\*Queue\) UpdatesStateRunning
+
+```go
+func (q *Queue) UpdatesStateRunning(id string)
+```
+
+UpdatesStateRunning обновляет состояние задания на "выполняется".
+
+<a name="State"></a>
+## type State
+
+State представляет состояние задания в очереди.
+
+```go
+type State string
+```
+
+<a name="StateQueued"></a>
+
+```go
+const (
+    StateQueued  State = "queued"
+    StateRunning State = "running"
+    StateDone    State = "done"
+    StateFailed  State = "failed"
+)
+```
+
+# processing
+
+```go
+import "kaspContainers/internal/processing"
+```
+
+## Index
+
+- [type Processor](<#Processor>)
+- [type RandomProcessor](<#RandomProcessor>)
+  - [func \(p RandomProcessor\) Process\(jobID string, payload string\) \(bool, time.Duration\)](<#RandomProcessor.Process>)
+
+
+<a name="Processor"></a>
+## type Processor
+
+Processor инкапсулирует бизнес\-логику обработки задания. Process выполняет задание и возвращает успех и длительность выполнения.
+
+```go
+type Processor interface {
+    Process(jobID string, payload string) (ok bool, attemptDuration time.Duration)
+}
+```
+
+<a name="RandomProcessor"></a>
+## type RandomProcessor
+
+RandomProcessor — пример реализации: случайная длительность и вероятность ошибки.
+
+```go
+type RandomProcessor struct {
+    ErrorRate int // 0..100
+}
+```
+
+<a name="RandomProcessor.Process"></a>
+### func \(RandomProcessor\) Process
+
+```go
+func (p RandomProcessor) Process(jobID string, payload string) (bool, time.Duration)
+```
+
+Process имитирует обработку задания: случайная длительность 100\-500мс, случайный успех/неуспех по ErrorRate.
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
