@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// TestSubmitExecutesTask проверяет, что Submit планирует и выполняет задачу ровно один раз.
 func TestSubmitExecutesTask(t *testing.T) {
 	wp := NewWorkerPool(2)
 	defer wp.StopWait()
@@ -27,6 +28,9 @@ func TestSubmitExecutesTask(t *testing.T) {
 		t.Errorf("expected task to be executed, got %d", executed)
 	}
 }
+
+// TestSubmitWaitBlocksUntilDone проверяет, что SubmitWait блокирует вызывающего
+// до полного завершения переданной задачи.
 func TestSubmitWaitBlocksUntilDone(t *testing.T) {
 	wp := NewWorkerPool(1)
 	defer wp.StopWait()
@@ -43,6 +47,9 @@ func TestSubmitWaitBlocksUntilDone(t *testing.T) {
 	}
 }
 
+// TestStopDoesNotRunQueuedTasks демонстрирует поведение классического worker pool на каналах:
+// после вызова Stop допустимо, что выполнится 1 или 2 задачи, если в момент остановки
+// задача уже была прочитана воркером из канала. Тест допускает оба исхода.
 func TestStopDoesNotRunQueuedTasks(t *testing.T) {
 	wp := NewWorkerPool(1)
 
@@ -68,6 +75,9 @@ func TestStopDoesNotRunQueuedTasks(t *testing.T) {
 		t.Errorf("expected 1 or 2 tasks to run, got %d", count)
 	}
 }
+
+// TestMultipleTasks проверяет, что пул корректно обрабатывает множество задач
+// параллельно и выполняет их все.
 func TestMultipleTasks(t *testing.T) {
 	wp := NewWorkerPool(4)
 	defer wp.StopWait()
@@ -90,6 +100,10 @@ func TestMultipleTasks(t *testing.T) {
 		t.Errorf("expected %d tasks executed, got %d", tasksCount, executed)
 	}
 }
+
+// TestStop проверяет, что после Stop отправка задач не зависает.
+// Submit должен паниковать при попытке отправки в закрытый пул,
+// а вызов не должен блокироваться.
 func TestStop(t *testing.T) {
 	wp := NewWorkerPool(2)
 
@@ -110,6 +124,9 @@ func TestStop(t *testing.T) {
 		t.Fatal("Submit blocked after Stop")
 	}
 }
+
+// TestStopWaitWaitsForTasks проверяет, что StopWait дожидается завершения
+// всех учтённых задач и не возвращается раньше времени.
 func TestStopWaitWaitsForTasks(t *testing.T) {
 	wp := NewWorkerPool(1)
 
